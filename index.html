@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tenor+Sans&display=swap" rel="stylesheet"/>
+<title>Pacing Calculator | Ad Delivery</title>
+<meta name="description" content="Estimate pacing and daily budget using planned CPM, current delivery, and yesterday's effective CPM. Best used for a single campaign, ad set, or tactic with a reasonably consistent CPM." />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --coral: #FF7D5E;
+    --coral-soft: rgba(255, 125, 94, 0.10);
+    --teal: #339292;
+    --teal-soft: rgba(51, 146, 146, 0.08);
+    --ink: #111111;
+    --ink-soft: #302c2a;
+    --muted: #6f6863;
+    --bg: #F7F5F3;
+    --card: #FFFFFF;
+    --line: #E7E0DC;
+    --soft: #FBF8F6;
+    --readonly: #ECE8E5;
+    --readonly-line: #DDD5D0;
+    --success: #1f8a62;
+    --danger: #c74f45;
+    --shadow: 0 8px 20px rgba(17,17,17,0.05);
+  }
+
+  body {
+    font-family: "Inter", "Avenir Next", "Segoe UI", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ── Header ── */
+  header {
+    max-width: 920px;
+    margin: 30px auto 0;
+    padding: 10px 20px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo {
+    font-family: "Tenor Sans", "Helvetica Neue", Arial, sans-serif;
+    font-size: 34px;
+    line-height: 1.06;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .logo .divider { color: #908782; padding: 0 10px; }
+  .logo .accent  { color: var(--teal); }
+
+  .logo-sub {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    line-height: 1.55;
+    max-width: 600px;
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 920px;
+    margin: 28px auto;
+    padding: 0 20px 60px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border-radius: 4px;
+    padding: 24px 26px;
+    margin-bottom: 16px;
+    border: 1px solid var(--line);
+    border-top: 2px solid rgba(255,125,94,0.85);
+    box-shadow: var(--shadow);
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--teal);
+    margin-bottom: 18px;
+  }
+
+  /* ── Input grid ── */
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 20px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .field label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: var(--ink-soft);
+  }
+
+  .field input[type="number"] {
+    border: 1.5px solid var(--line);
+    background: #fbfbfb;
+    border-radius: 4px;
+    padding: 11px 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+    min-height: 45px;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    -moz-appearance: textfield;
+  }
+
+  .field input[type="number"]::-webkit-inner-spin-button,
+  .field input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .field input[type="number"]:focus {
+    border-color: var(--teal);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(51,146,146,0.10);
+  }
+
+  .field input[type="number"].is-error {
+    border-color: var(--danger);
+    background: #FDF5F4;
+  }
+
+  .field input[type="number"].is-warn {
+    border-color: #e09a40;
+    background: #FFFAF4;
+  }
+
+  .hint {
+    font-size: 10px;
+    color: #918883;
+    line-height: 1.45;
+  }
+
+  .field-error {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--danger);
+    letter-spacing: 0.02em;
+    display: none;
+  }
+
+  .field-error.visible { display: block; }
+
+  .field-warn {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9a6820;
+    letter-spacing: 0.02em;
+    display: none;
+    line-height: 1.5;
+  }
+
+  .field-warn.visible { display: block; }
+
+  /* ── Results ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 20px;
+  }
+
+  .result-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .result-field.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .result-field label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: var(--ink-soft);
+  }
+
+  /* Base read-only display */
+  .calc-display {
+    background: var(--readonly);
+    border: 1.5px solid var(--readonly-line);
+    border-radius: 4px;
+    padding: 11px 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #5f5954;
+    min-height: 45px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Primary output: teal */
+  .result-field.primary .calc-display {
+    background: #F4FAFA;
+    border-color: #CFE4E4;
+    color: var(--teal);
+    font-size: 17px;
+  }
+
+  /* Warn state: outputs affected by zero impressions */
+  .calc-display.state-warn {
+    background: #FFFAF4;
+    border-color: #F0D5A8;
+    color: #9a6820;
+    font-size: 13px;
+    font-weight: 500;
+    font-style: italic;
+  }
+
+  .result-hint {
+    font-size: 10px;
+    color: #928982;
+    line-height: 1.45;
+  }
+
+  /* ── Disclaimer block ── */
+  .disclaimer {
+    background: #F4FAFA;
+    border: 1px solid #D7E8E8;
+    border-left: 4px solid var(--teal);
+    border-radius: 4px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+
+  .disclaimer-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: var(--teal);
+    margin-bottom: 10px;
+  }
+
+  .disclaimer p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.65;
+    margin-bottom: 8px;
+  }
+
+  .disclaimer p:last-child { margin-bottom: 0; }
+
+  .disclaimer ul {
+    margin: 6px 0 8px 16px;
+    padding: 0;
+  }
+
+  .disclaimer ul li {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.65;
+    margin-bottom: 4px;
+  }
+
+  .disclaimer ul li:last-child { margin-bottom: 0; }
+
+  /* ── Buttons ── */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+
+  .reset-btn {
+    background: var(--coral);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 24px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease;
+    box-shadow: 0 10px 18px rgba(255,125,94,0.18);
+  }
+
+  .reset-btn:hover {
+    opacity: .92;
+    transform: translateY(-1px);
+  }
+
+
+  /* ── Back to top ── */
+  .back-to-top {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid rgba(51,146,146,0.22);
+    background: #fff;
+    color: var(--teal);
+    box-shadow: 0 10px 20px rgba(17,17,17,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity .18s ease, transform .18s ease;
+    z-index: 30;
+    padding: 0;
+  }
+
+  .back-to-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .back-to-top:hover   { box-shadow: 0 12px 24px rgba(17,17,17,0.12); }
+
+  .back-to-top svg {
+    width: 22px; height: 22px; display: block;
+    stroke: currentColor; stroke-width: 2.4;
+    stroke-linecap: round; stroke-linejoin: round; fill: none;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 800px) {
+    header { margin-top: 18px; padding: 10px 16px 2px; }
+    .container { padding: 0 14px 42px; }
+    .card { padding: 18px; }
+  }
+
+  @media (max-width: 640px) {
+    .logo { font-size: 26px; }
+    .logo-sub { font-size: 11px; }
+    .field-grid  { grid-template-columns: 1fr; }
+    .results-grid { grid-template-columns: 1fr; }
+    .result-field.full-width { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <div class="logo">Pacing <span class="divider">|</span> <span class="accent">Calculator</span></div>
+    <div class="logo-sub">Estimate pacing and daily budget using planned CPM, current delivery, and yesterday's effective CPM.</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ── INPUTS ── -->
+  <div class="card">
+    <div class="card-title">Inputs</div>
+    <div class="field-grid">
+
+      <div class="field">
+        <label>Budget ($)</label>
+        <input type="number" id="budget" min="0.01" step="1" placeholder="1000" />
+        <span class="field-error" id="err-budget">Must be greater than 0.</span>
+      </div>
+
+      <div class="field">
+        <label>CPM — Planned/Input ($)</label>
+        <input type="number" id="cpm" min="0.01" step="0.01" placeholder="20" />
+        <span class="hint">Use the planned or sheet CPM for this campaign or tactic.</span>
+        <span class="field-error" id="err-cpm">Must be greater than 0.</span>
+      </div>
+
+      <div class="field">
+        <label>Impressions So Far</label>
+        <input type="number" id="impressionsSoFar" min="0" step="1" placeholder="15000" />
+        <span class="field-error" id="err-impressionsSoFar">Must be 0 or more.</span>
+      </div>
+
+      <div class="field">
+        <label>Days Left</label>
+        <input type="number" id="daysLeft" min="1" step="1" placeholder="5" />
+        <span class="field-error" id="err-daysLeft">Must be greater than 0.</span>
+      </div>
+
+      <div class="field">
+        <label>Yesterday's Impressions</label>
+        <input type="number" id="yesterdayImpressions" min="0" step="1" placeholder="3200" />
+        <span class="field-warn" id="warn-yesterdayImpressions">Yesterday's Impressions is 0 — Effective CPM and budget estimate cannot be calculated. Enter a value greater than 0 or leave blank if not yet available.</span>
+        <span class="field-error" id="err-yesterdayImpressions">Must be 0 or more.</span>
+      </div>
+
+      <div class="field">
+        <label>Current Daily Budget ($)</label>
+        <input type="number" id="currentDailyBudget" min="0" step="0.01" placeholder="50" />
+        <span class="field-error" id="err-currentDailyBudget">Must be 0 or more.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div class="card">
+    <div class="card-title">Results</div>
+    <div class="results-grid">
+
+      <div class="result-field">
+        <label>Estimated Total Impressions</label>
+        <div class="calc-display" id="out-totalImpressions">—</div>
+      </div>
+
+      <div class="result-field">
+        <label>Impressions Remaining</label>
+        <div class="calc-display" id="out-impressionsRemaining">—</div>
+      </div>
+
+      <div class="result-field">
+        <label>Needed Per Day</label>
+        <div class="calc-display" id="out-neededPerDay">—</div>
+      </div>
+
+      <div class="result-field">
+        <label>Yesterday's Effective CPM ($)</label>
+        <div class="calc-display" id="out-effectiveCPM">—</div>
+        <div class="result-hint">Based on current daily budget and yesterday's impressions.</div>
+      </div>
+
+      <div class="result-field full-width primary">
+        <label>Daily Budget Estimate — Based on Yesterday's Effective CPM</label>
+        <div class="calc-display" id="out-suggestedBudget">—</div>
+        <div class="result-hint">A math-based estimate using recent delivery. Use judgment before making changes.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── RESET ── -->
+  <div class="btn-row">
+    <button class="reset-btn" onclick="resetAll()">Reset</button>
+  </div>
+
+  <!-- ── DISCLAIMER ── -->
+  <div class="disclaimer">
+    <div class="disclaimer-title">Disclaimer</div>
+    <p><strong style="color: var(--ink-soft);">This calculator is a pacing aid, not an automated budget recommendation tool.</strong></p>
+    <ul>
+      <li>Best used for a single campaign, ad set, or tactic with a reasonably consistent CPM.</li>
+      <li>Blended client totals with multiple ad sets, tactics, or mixed CPMs may produce misleading results.</li>
+      <li>Yesterday's Effective CPM is based on recent delivery and may vary significantly day to day.</li>
+      <li>The planned/input CPM from a budget sheet may differ from actual recent delivery CPM.</li>
+      <li>Final budget changes should still use platform behavior and human judgment.</li>
+    </ul>
+  </div>
+
+</div>
+
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
+  <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+  // ── Field validation rules ──
+  const RULES = {
+    budget:               { required: true,  minExclusive: 0,  errMsg: "Must be greater than 0." },
+    cpm:                  { required: true,  minExclusive: 0,  errMsg: "Must be greater than 0." },
+    impressionsSoFar:     { required: false, minInclusive: 0,  errMsg: "Must be 0 or more." },
+    daysLeft:             { required: true,  minExclusive: 0,  errMsg: "Must be greater than 0." },
+    yesterdayImpressions: { required: false, minInclusive: 0,  errMsg: "Must be 0 or more." },
+    currentDailyBudget:   { required: false, minInclusive: 0,  errMsg: "Must be 0 or more." },
+  };
+
+  Object.keys(RULES).forEach(id => {
+    document.getElementById(id).addEventListener('input', calculate);
+  });
+
+  function getVal(id) {
+    const v = document.getElementById(id).value;
+    if (v === '' || v === null) return null;
+    const n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  }
+
+  function validate() {
+    let allOk = true;
+
+    Object.keys(RULES).forEach(id => {
+      const rule  = RULES[id];
+      const val   = getVal(id);
+      const input = document.getElementById(id);
+      const err   = document.getElementById('err-' + id);
+      let hasErr  = false;
+
+      if (val === null) {
+        if (rule.required) hasErr = true;
+      } else if (rule.minExclusive !== undefined && val <= 0) {
+        hasErr = true;
+      } else if (rule.minInclusive !== undefined && val < 0) {
+        hasErr = true;
+      }
+
+      input.classList.toggle('is-error', hasErr);
+      if (err) err.classList.toggle('visible', hasErr);
+      if (hasErr && (rule.required || val !== null)) allOk = false;
+    });
+
+    // Warning: yesterdayImpressions explicitly entered as 0
+    const yiVal   = getVal('yesterdayImpressions');
+    const yiInput = document.getElementById('yesterdayImpressions');
+    const yiWarn  = document.getElementById('warn-yesterdayImpressions');
+    const isZero  = yiVal !== null && yiVal === 0;
+    yiInput.classList.toggle('is-warn', isZero);
+    yiWarn.classList.toggle('visible', isZero);
+
+    return allOk;
+  }
+
+  function fmt(n, decimals = 0) {
+    return n.toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  }
+
+  function setOut(id, text, warnState = false) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.classList.toggle('state-warn', warnState);
+  }
+
+  function clearOutputs() {
+    ['out-totalImpressions','out-impressionsRemaining','out-neededPerDay',
+     'out-effectiveCPM','out-suggestedBudget'].forEach(id => setOut(id, '—'));
+  }
+
+  function hasAnyInput() {
+    return Object.keys(RULES).some(id => getVal(id) !== null);
+  }
+
+  function calculate() {
+    if (!hasAnyInput()) { clearOutputs(); return; }
+
+    validate();
+
+    const budget       = getVal('budget');
+    const cpm          = getVal('cpm');
+    const sofar        = getVal('impressionsSoFar') ?? 0;
+    const daysLeft     = getVal('daysLeft');
+    const yesterday    = getVal('yesterdayImpressions');
+    const dailyBudget  = getVal('currentDailyBudget') ?? 0;
+
+    // Must have required fields to calculate anything
+    if (!budget || budget <= 0 || !cpm || cpm <= 0 || !daysLeft || daysLeft <= 0) {
+      clearOutputs();
+      return;
+    }
+
+    // ── Formulas 1–3 (always calculable if required fields present) ──
+    const totalImpressions     = (budget / cpm) * 1000;
+    const impressionsRemaining = Math.max(totalImpressions - sofar, 0);
+    const neededPerDay         = impressionsRemaining / daysLeft;
+
+    setOut('out-totalImpressions',     fmt(totalImpressions));
+    setOut('out-impressionsRemaining', fmt(impressionsRemaining));
+    setOut('out-neededPerDay',         fmt(neededPerDay));
+
+    // ── Formulas 4–5 (require yesterday > 0) ──
+    if (yesterday === null) {
+      // Not entered yet — neutral dash
+      setOut('out-effectiveCPM',    '—');
+      setOut('out-suggestedBudget', '—');
+    } else if (yesterday === 0) {
+      // Explicitly zero — warn state
+      setOut('out-effectiveCPM',    'Cannot calculate — yesterday\'s impressions is 0', true);
+      setOut('out-suggestedBudget', 'Cannot calculate — yesterday\'s impressions is 0', true);
+    } else {
+      const effectiveCPM      = (dailyBudget / yesterday) * 1000;
+      const suggestedBudget   = (neededPerDay / 1000) * effectiveCPM;
+      setOut('out-effectiveCPM',    '$' + fmt(effectiveCPM, 2));
+      setOut('out-suggestedBudget', '$' + fmt(suggestedBudget, 2));
+    }
+  }
+
+  function resetAll() {
+    Object.keys(RULES).forEach(id => {
+      const input = document.getElementById(id);
+      input.value = '';
+      input.classList.remove('is-error', 'is-warn');
+      const err  = document.getElementById('err-' + id);
+      const warn = document.getElementById('warn-' + id);
+      if (err)  err.classList.remove('visible');
+      if (warn) warn.classList.remove('visible');
+    });
+    clearOutputs();
+  }
+
+  // Back to top
+  window.addEventListener('scroll', () => {
+    document.getElementById('backToTop').classList.toggle('visible', window.scrollY > 200);
+  });
+</script>
+</body>
+</html>
